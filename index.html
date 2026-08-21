@@ -1,0 +1,1853 @@
+<!DOCTYPE html>
+
+<!-- made by alzmaoqs@gmail.com -->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>강지용 키우기 시뮬레이터</title>
+<style>
+  * { box-sizing: border-box; }
+
+  .yourmominthehell {
+    position: absolute;
+    top: 20px;
+    left: 1000px;
+    width: 150px;
+    height: auto;
+    max-width: 20vw;
+  }
+
+  body {
+    background: #1b1b1b;
+    color: #eee;
+    text-align: center;
+    font-family:'Pretendard',sans-serif;
+    margin: 0;
+    padding: 10px;
+    overflow-x: hidden;
+  }
+  h1 { color: #ffcc00; font-size: 1.6em; margin: 10px 0; }
+
+  #stats {
+    background:#333; padding:15px; border-radius:10px;
+    width:320px; max-width: 92vw; margin:auto; line-height:1.8; text-align:left;
+  }
+
+  button {
+    padding:10px; margin:5px; background:#555; color:#fff; border:0;
+    border-radius:8px; cursor:pointer; transition:0.2s;
+    font-size: 14px; touch-action: manipulation;
+  }
+  button:hover { background:#888; }
+  button:active { background:#aaa; }
+
+  /* 버튼 그룹: button은 기본이 inline-block이라 좁은 화면에서 자연스레 줄바꿈됨.
+     폭만 제한해서 중앙 정렬되게 함 (JS의 display:none/block 토글과 충돌하지 않도록 flex는 안 씀) */
+  #actions, #socialActions, #tributeBox, #socialDuelBox, #duelActions,
+  #callFriendBox, #workaction, #eatActions, #jusibalsell, #jusibalbuy,
+  #sellBox, #craftBox, #exploreBox {
+    max-width: 480px; margin-left: auto; margin-right: auto;
+  }
+
+  #log { margin-top:15px; background:#111; padding:10px; border-radius:8px; min-height:60px; }
+
+  #inventoryBox {
+    position:absolute; right:20px; top:120px; background:#333; padding:15px;
+    border-radius:10px; width:220px; max-width: 92vw; text-align:left;
+  }
+  #inventoryBox h3 { margin:0 0 10px 0; }
+
+  #actionLog, #eventLog, #friendshipBox, #realEstate {
+    width: 320px; max-width: 92vw; margin: 15px auto; box-sizing: border-box;
+  }
+
+  #eventLog { max-height: 220px; overflow-y: auto; text-align:left; }
+  .newsEntry { padding: 4px 0; border-bottom: 1px solid #333; font-size: 13px; }
+  .newsEntry:first-child { color: #ffcc00; font-weight: bold; }
+
+  /* ===== 뉴스 속보 팝업 ===== */
+  #newsOverlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #newsPopup {
+    background: #f4f1e9;
+    color: #111;
+    width: 100%;
+    max-width: 380px;
+    border-radius: 6px;
+    box-shadow: 0 0 25px rgba(0,0,0,0.6);
+    overflow: hidden;
+    font-family: 'Georgia', serif;
+    text-align: left;
+  }
+  #newsPopup .newsMasthead {
+    background: #b30000;
+    color: #fff;
+    padding: 8px 14px;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #newsPopup .newsTitle {
+    padding: 14px 16px 4px;
+    font-size: 20px;
+    font-weight: bold;
+    border-bottom: 2px solid #111;
+    margin-bottom: 8px;
+  }
+  #newsPopup .newsBody {
+    padding: 4px 16px 16px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  #newsPopup .newsCloseBtn {
+    background: #111;
+    color: #fff;
+    border: 0;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* ===== 모바일 반응형 ===== */
+  @media (max-width: 600px) {
+    h1 { font-size: 1.2em; }
+    .yourmominthehell { display: none; }
+    #achievementSystem { position: static !important; width: 92vw; margin: 10px auto; }
+    #achievementList { width: 100% !important; box-sizing: border-box; }
+    #inventoryBox { position: static; width: 92vw; margin: 15px auto; }
+    button { padding: 8px 10px; margin: 3px; font-size: 13px; }
+    #stats, #actionLog, #eventLog, #friendshipBox, #realEstate {
+      width: 92vw;
+    }
+  }
+</style>
+</head>
+
+<body>
+<img src="image.jpg" alt="거울을 봐." class="yourmominthehell">
+
+
+<h1> 강지용 키우기 시뮬레이터 </h1>
+<div id="achievementSystem" style="position: fixed; top: 10px; left: 10px; z-index: 1000; text-align: left;">
+  <div id="achievementAlert" style="display:none; background: #ffcc00; color: #000; padding: 10px; font-weight: bold; margin-bottom: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+    새로운 똥싸기.
+  </div>
+  <div id="achievementList" style="background: rgba(0,0,0,0.8); color: #fff; padding: 10px; border-radius: 5px; width: 220px; max-height: 200px;">
+    <h4 style="margin: 0 0 5px 0; color: #3d3d3d;">터뜨린 업적</h4>
+    <div id="earnedAchievements">무능함</div>
+  </div>
+</div>
+<div id="stats">
+  ⚡에너지: <span id="energy">100</span><br>
+  ❤️체력: <span id="health">10</span><br>
+  🍗포만감: <span id="hunger">10</span><br>
+  🧠지능: <span id="intelligence">1</span><br>
+  🧱숙련도: <span id="skill">1</span><br>
+  💰돈: <span id="money">0</span><br>
+  😊행복도: <span id="happy">100</span><br>
+  💪힘: <span id="power">10</span><br>
+  🧼청결도: <span id="clean">10</span><br>
+  🦠병상태: <span id="disease">없음</span><br>
+  ⏳턴: <span id="turn">0</span><br>
+  지용인기도ㅗ<span id="popularity">5</span><br>
+  📜 장착 스킬: <span id="skillDisplay">없음</span><br>
+  ⚔️ 장착 무기: <span id="equippedDisplay">없음</span>
+</div>
+
+<div id="actions">
+  <button onclick="act('work')">로동</button>
+  <button onclick="act('train')">단련</button>
+  <button onclick="act('sleep')">쳐자기</button>
+  <button onclick="act('shop')">장보기</button>
+  <button onclick="act('eat')">밥주기</button>
+  <button onclick="act('study')">공부</button>
+  <button onclick="act('wash')">씻기기</button>
+  <button onclick="act('duel')">결투 신청</button>
+  <button onclick="act('heal')">휴식하기</button>
+  <button onclick="act('jusiksell')">주식쳐되팔이해서경제흐름을파괴하기</button>
+  <button onclick="act('jusikbuy')">주식쳐사기</button>
+  <button onclick="showAllPrices()">주가를보기</button>
+  <button onclick="explore()">모험/탐험</button>
+  <button onclick="showSell()">판매</button>
+  <button onclick="act('weaponGacha')">무기뽑기</button>
+  <button onclick="act('social')">대인관계</button>
+  <button onclick="act('craft')">아이템 제작(조합)</button>
+  <button onclick="saveProgress()">저장</button>
+  <button onclick="loadProgress()">불러오기</button>
+  <button onclick="act('jail')">지용이의지하감옥</button>
+</div>
+
+<div id="socialActions" style="display:none; margin-top:10px;">
+  <button onclick="showTribute()">조공 바치기</button>
+  <button onclick="showSocialDuel()">싸우기</button>
+</div>
+
+<div id="tributeBox" style="display:none; margin-top:10px;">
+  <p>조공 바칠 상대:</p>
+  <button onclick="tributeChoice('제임스브라운')">제임스브라운</button>
+  <button onclick="tributeChoice('블랙맨')">블랙맨</button>
+  <button onclick="tributeChoice('화이트맨')">화이트맨</button>
+  <button onclick="tributeChoice('맘지용')">맘지용</button>
+  <button onclick="tributeChoice('개돼지')">개돼지</button>
+  <button onclick="tributeChoice('원숭이')">원숭이</button>
+  <button onclick="tributeChoice('침팬치')">침팬치</button>
+</div>
+
+<div id="socialDuelBox" style="display:none; margin-top:10px;">
+  <p>싸울 상대:</p>
+  <button onclick="socialDuelChoice('제임스브라운')">제임스브라운</button>
+  <button onclick="socialDuelChoice('블랙맨')">블랙맨</button>
+  <button onclick="socialDuelChoice('화이트맨')">화이트맨</button>
+  <button onclick="socialDuelChoice('맘지용')">맘지용</button>
+  <button onclick="socialDuelChoice('개돼지')">개돼지</button>
+  <button onclick="socialDuelChoice('원숭이')">원숭이</button>
+  <button onclick="socialDuelChoice('침팬치')">침팬치</button>
+</div>
+
+<div id="duelActions" style="display:none; margin-top:10px;">
+  <button onclick="duelTurn('attack')">공격</button>
+  <button onclick="duelTurn('take')">맞기</button>
+  <button onclick="duelTurn('fireegg')">마법-파이어에그</button>
+  <button onclick="duelTurn('skill')" id="skillSlotBtn">스킬 사용</button>
+  <button onclick="duelTurn('suicide')">자폭하기</button>
+  <button onclick="duelTurn('run')">쫄튀</button>
+  <button onclick="showCallFriend()">친구 부르기</button>
+</div>
+
+<div id="callFriendBox" style="display:none; margin-top:10px;">
+  <p>부르고 싶은 친구 (친밀도 20 이상):</p>
+  <button onclick="callFriend('제임스브라운')">제임스브라운</button>
+  <button onclick="callFriend('블랙맨')">블랙맨</button>
+  <button onclick="callFriend('화이트맨')">화이트맨</button>
+  <button onclick="callFriend('맘지용')">맘지용</button>
+  <button onclick="callFriend('개돼지')">개돼지</button>
+  <button onclick="callFriend('원숭이')">원숭이</button>
+  <button onclick="callFriend('침팬치')">침팬치</button>
+</div>
+
+<div id="workaction" style="display:none; margin-top:10px;">
+  <button onclick="workturn('coalmine')">탄광가기</button>
+  <button onclick="workturn('beg')">구걸하기</button>
+  <button onclick="workturn('robber')">삥뜯기</button>
+  <button onclick="workturn('fuckwork')">돈내고 로동하기</button>
+</div>
+
+<div id="eatActions" style="display:none; margin-top:10px;">
+  <button onclick="eatChoice('ricenoodle')">쌀국수</button>
+  <button onclick="eatChoice('stonerice')">돌밥</button>
+  <button onclick="eatChoice('aguchang')">죽빵12개월치</button>
+  <button onclick="eatChoice('soju')">손소독제한사바리</button>
+</div>
+
+<div id="jusibalsell" style="display:none; margin-top:10px;">
+  <button onclick="sellStock(1, 1)">한계기업 1주 매도</button>
+  <button onclick="sellStock(2, 1)">드럼통공장 1주 매도</button>
+  <button onclick="sellStock(3, 1)">쌀국수집 1주 매도</button>
+  <button onclick="sellStock(4, 1)">초딩교습소 1주 매도</button>
+</div>
+
+<div id="jusibalbuy" style="display:none; margin-top:10px;">
+  <button onclick="buyStock(1, 1)">한계기업 1주 매수</button>
+  <button onclick="buyStock(2, 1)">드럼통공장 1주 매수</button>
+  <button onclick="buyStock(3, 1)">쌀국수집 1주 매수</button>
+  <button onclick="buyStock(4, 1)">초딩교습소 1주 매수</button>
+</div>
+
+<div id="sellBox" style="display:none; margin-top:10px;">
+  <p>판매할 아이템 선택:</p>
+  <button onclick="sellItem(0)">1번 항목 판매</button>
+  <button onclick="sellItem(1)">2번 항목 판매</button>
+  <button onclick="sellItem(2)">3번 항목 판매</button>
+</div>
+
+<div id="craftBox" style="display:none; margin-top:10px;">
+  <p>🔨 어떤 두 아이템을 합칠까? (인벤토리 번호 기준)</p>
+  <button onclick="craftItems(0,1)">1번 + 2번 합치기</button>
+  <button onclick="craftItems(0,2)">1번 + 3번 합치기</button>
+  <button onclick="craftItems(1,2)">2번 + 3번 합치기</button>
+  <p style="font-size:12px;color:#aaa;">※ 레시피에 없는 조합은 실패하여 '퇴비'가 된다.</p>
+</div>
+
+<div id="exploreBox" style="display:none; margin-top:10px;">
+  <p>탐험 선택:</p>
+  <button onclick="exploreChoice(0)">break into 놀이터</button>
+  <button onclick="exploreChoice(1)"> 시궁창으로 가다</button>
+  <button onclick="exploreChoice(2)"> break into 어린이정원</button>
+  <button onclick="exploreChoice(3)">브레크 인투 남의개집</button>
+</div>
+
+<div id="actionLog" style="background:#111; padding:10px; border-radius:8px; min-height:50px; margin-bottom:10px;">
+  행동 결과가 여기에 표시됩니다.
+</div>
+
+<div id="eventLog" style="background:#222; padding:10px; border-radius:8px; min-height:50px;">
+  랜덤 이벤트가 여기에 표시됩니다.
+</div>
+
+<div id="inventoryBox">
+  <h3>📦 인벤토리 (3칸)</h3>
+  <div id="inventory">비어있음</div>
+</div>
+<div id="friendshipBox" style="background:#333; padding:15px; border-radius:10px; width:320px; margin:20px auto; text-align:left;">
+  <h3>친밀도</h3>
+  <div id="friendshipStatus"></div>
+</div>
+<div id="realEstate" style="background:#222; padding:15px; border-radius:10px; width:320px; margin:20px auto;">
+  <h3>🏠 부동산</h3>
+  <p>현재 집: <span id="currentHouse">종이가방</span></p>
+  <p>돈: <span id="money2">0</span>원</p>
+  
+  <div style="margin-top:10px;">
+    <button onclick="buyHouse('개집')">개집 (50원)</button>
+    <button onclick="buyHouse('판자집')">판자집 (100원)</button>
+    <button onclick="buyHouse('움막')">움막 (200원)</button>
+    <button onclick="buyHouse('럭셔리개집')">럭셔리개집 (500원)</button>
+  </div>
+</div>
+
+<!-- 뉴스 속보 팝업 -->
+<div id="newsOverlay" onclick="if(event.target===this) closeNewsPopup()">
+  <div id="newsPopup">
+    <div class="newsMasthead">
+      <span>📰 지용일보 속보</span>
+      <span id="newsTurnLabel">턴 0</span>
+    </div>
+    <div class="newsTitle">긴급속보</div>
+    <div class="newsBody" id="newsBody"></div>
+    <div style="padding: 0 16px 16px; text-align:right;">
+      <button class="newsCloseBtn" onclick="closeNewsPopup()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+//made by alzmaoqs@gmail.com
+
+let stats = {
+  energy: 100,
+  skillSlot: null, 
+  skillLevel: 0,   
+  skillUsage: 0,   
+  learnedSkills: [], 
+  health: 10,
+  hunger: 10,
+  intelligence: 1,
+  skill: 1,
+  money: 0,
+  happy: 100,
+  power: 10,
+  clean: 10,
+  disease: 0,
+  turn: 0,
+  deathReason: "",
+  popularity: 5,
+  equippedWeapon: null,
+  stocks: {
+    '한계기업': 0,
+    '행복주택공장': 0,
+    '쌀국수집': 0,
+    '교습소': 0
+  }, 
+  friendship: {
+    '제임스브라운': 0,
+    '블랙맨': 0,
+    '화이트맨': 0,
+    '맘지용': 0,
+    '개돼지': 0,
+    '원숭이': 0,
+    '침팬치': 0
+  }
+};
+
+
+const stockMarket = {
+  '한계기업': { price: 10, volatility: 2, growth: -1, desc: "안정성과신뢰도그리고국적을알수없고뭘하는지도알수없는사면호구쌉쌉이여서개돼지들과친구먹는등신같은선택지" },
+  '행복주택공장': { price: 20, volatility: 1.4, growth: 0.6, desc: "지용이가유이자1024개월로구입한청년행복주택생산회사,5주이상보유시무료잠수체험" },
+  '쌀국수집': { price: 19394, volatility: 1.2, growth: 1, desc: "쌀먹을하기에최선의선택지" },
+  '교습소': { price: 20, volatility: 0.5, growth: 0.4, desc: "지용의미래2순위장래희망이여기에재학생이되기위해필요한것" }
+};
+
+const skillDatabase = {
+  "똥뿌리기": { maxLevel: 1 },
+  "맘브레이킹": { maxLevel: 2 },
+  "창백한빠큐": { maxLevel: 3 }
+};
+// 주식 가격 변동 함수 (nextTurn에서 호출)
+function updateStockPrices() {
+  for (let name in stockMarket) {
+    let company = stockMarket[name];
+    if (company.isDelisted) continue;
+
+    // 변동치 계산: (랜덤값 * 변동성) + 기업가치(성장성)
+    let change = (Math.random() * company.volatility * 2 - company.volatility) + company.growth;
+    company.price = Math.round(company.price + change);
+
+    // 상장 폐지 조건
+    if (company.price <= 0) {
+      company.price = 0;
+      company.isDelisted = true;
+      logEvent(`[상장폐지] ${name}가 쳐망해서, 경제가 지랄났습니다`);
+      
+      // 모든 기업 가치 소폭 하락 패널티
+      for (let k in stockMarket) { stockMarket[k].growth -= 0.1; }
+      
+      // 보유 주식 휴지조각 처리
+      stats.stocks[name] = 0;
+    }
+  }
+  checkStockEffects();
+}
+
+// 보유 주식에 따른 특수 효과 체크
+function checkStockEffects() {
+  // 1. 한계기업: 5주 이상 보유 시 동물 친구들 친밀도 상승
+  if (stats.stocks['한계기업'] >= 5) {
+  logEvent(`똥싸고 앉아있네`)
+    achievement('짐승만도 못한놈')
+    stats.friendship['원숭이'] += 0.5;
+    stats.friendship['침팬치'] += 0.5;
+    stats.friendship['개돼지'] += 0.5;
+  }
+  
+  // 2. 행복주택공장: 50주 이상 보유 시 게임오버
+if (stats.stocks['행복주택공장'] >= 50) {
+    stats.deathReason = "드럼통에 담겨 실종되었습니다.";
+    stats.health=-10000000000;
+    checkDeath();
+  }
+
+  // 4. 교습소: 5주 이상 보유 시 매턴 소량 이자 수익
+  if (stats.stocks['교습소'] >= 5) {
+    stats.money += 3;
+  }
+}
+
+function buyStock(idx, amount) {
+  let msg = "";
+  amount = parseInt(amount) || 1;
+  let stockName = "";
+
+  // 기업 선택
+  switch(idx) {
+    case 1: stockName = '한계기업'; break;
+    case 2: stockName = '행복주택공장'; break;
+    case 3: stockName = '쌀국수집'; break;
+    case 4: stockName = '교습소'; break;
+  }
+
+  const company = stockMarket[stockName];
+  if (company.isDelisted) return log(`${stockName}은(는) 쫄딱 망해 못삼`);
+
+  const totalCost = company.price * amount;
+
+
+  if (stats.money >= totalCost) {
+    stats.money -= totalCost;
+    stats.stocks[stockName] += amount;
+
+    switch(idx) {
+      case 1:
+        msg = `[한계기업] ${amount}주 매수. 똥싸고있네, 쌀숭이들이 좋아할듯`;
+        break;
+      case 2:
+        msg = `[행복주택] ${amount}주 매수. 행복청년주택사업소의 주를 샀다 `;
+        break;
+      case 3:
+        msg = `[쌀국수집] ${amount}주 매수.니가 호구란것이 증명되었다.`;
+        break;
+      case 4:
+        msg = `[교습소] ${amount}주 매수.롤모델을 바라고보고만 샀다.`;
+        break;
+    }
+  } else {
+    msg = "그지새끼ㅉㅉㅉㅉㅉㅉ";
+  }
+
+  log(msg);
+  updateStats();
+}
+
+function sellStock(idx, amount) {
+  let msg = "";
+  amount = parseInt(amount) || 1;
+  let stockName = "";
+
+  switch(idx) {
+    case 1: stockName = '한계기업'; break;
+    case 2: stockName = '행복주택공장'; break;
+    case 3: stockName = '쌀국수집'; break;
+    case 4: stockName = '교습소'; break;
+  }
+
+  const company = stockMarket[stockName];
+
+  // 매도 실행 (보유량 체크)
+  if (stats.stocks[stockName] >= amount) {
+    const totalGain = company.price * amount;
+    stats.money += totalGain;
+    stats.stocks[stockName] -= amount;
+
+    switch(idx) {
+      case 1:
+        msg = `[한계기업] ${amount}주 매도.  ${totalGain}예초에 기업명부터 씹창났는데 왜샀냐 호구야`;
+        break;
+      case 2:
+        msg = `[행복주택] ${amount}주 매도. 드럼통의 위협에서 멀어짐.`;
+        break;
+      default:
+        msg = `[${stockName}] ${amount}주 쳐갖다팔기 완료. 현금 ${totalGain}원 확보.`;
+        break;
+    }
+  } else {
+    msg = `사기꾼의천성 ㅗㅗㅗㅗㅗㅗㅗㅗㅗㅗㅗㅗㅗ(현재 ${stats.stocks[stockName]}주 보유)`;
+  }
+
+  log(msg);
+  updateStats();
+}
+
+let step = 0; // 전역 변수로 선언
+
+const events = [
+  {
+    text: "지용이는 길거리에서 한판 뜨고 왔다.",
+    effect: () => {
+      stats.health -= 5;
+      stats.power += 1;
+      stats.intelligence -= 1;
+      if (stats.health <= 0) stats.deathReason = "싸우다 뒤짐";
+    }
+  },
+  {
+    text: "지용이는 10원을 개미들한테 기부했다.",
+    effect: () => stats.money -= 10
+  },
+  {
+    text: "10원을 20원에 구입한,  10개의것과 2개를 교환해 큰이익을 얻은.",
+    effect: () => stats.money -= 10
+  },
+  {
+    text: "지용이는 깨달았다. but 지용이의 뇌에 과부하가 걸렸다",
+    effect: () => { 
+      stats.intelligence -= 10000;
+      stats.health -= 5;
+    }
+  },
+  {
+    text: "지용이는 삥뜯꼈다. 행복 -5, 돈-10",
+    effect: () => {
+      stats.happy -= 5;
+      stats.money -= 10;
+    }
+  },
+  {
+    text: "지용이는 욕먹었다.",
+    effect: () => {
+      stats.happy -= 5;
+      stats.popularity  -= 5;
+    }
+  }
+];
+
+// 👇 친구를 적/지원군으로 설정하는 데이터 추가
+const friendsAsEnemies = {
+  '제임스브라운': { health: 50, power: 15, money: 50 },
+  '블랙맨': { health: 30, power: 10, money: 30 },
+  '화이트맨': { health: 40, power: 12, money: 40 },
+  '맘지용': { health: 70, power: 20, money: 70 },
+  '개돼지': { health: 20, power: 8, money: 20 },
+  '원숭이': { health: 15, power: 5, money: 15 },
+  '침팬치': { health: 25, power: 9, money: 25 },
+};
+
+// 👇 결투 시 친구의 공격력 (친밀도에 따라 보정)
+const friendCallDamage = {
+  '제임스브라운': 10,
+  '블랙맨': 5,
+  '화이트맨': 7,
+  '맘지용': 15,
+  '개돼지': 3,
+  '원숭이': 1,
+  '침팬치': 4,
+};
+
+
+function saveProgress() {
+  localStorage.setItem("jiyongSave", JSON.stringify(stats));
+  localStorage.setItem("jiyongInventory", JSON.stringify(inventory));
+  localStorage.setItem("jiyongHouse", JSON.stringify(house));
+  console.log("저장됨");
+}
+
+function loadProgress() {
+  const saved = localStorage.getItem("jiyongSave");
+  if (saved) {
+    stats = JSON.parse(saved);
+    // friendship 데이터가 없을 경우 초기화 (호환성)
+    if (!stats.friendship) {
+        stats.friendship = {
+            '제임스브라운': 0, '블랙맨': 0, '화이트맨': 0, '맘지용': 0, '개돼지': 0, '원숭이': 0, '침팬치': 0
+        };
+    }
+    if (stats.equippedWeapon === undefined) stats.equippedWeapon = null;
+
+    const savedInv = localStorage.getItem("jiyongInventory");
+    if (savedInv) inventory = JSON.parse(savedInv);
+
+    const savedHouse = localStorage.getItem("jiyongHouse");
+    if (savedHouse) house = JSON.parse(savedHouse);
+
+    console.log("불러오기 완료");
+    updateInventory();
+    updateHouse();
+    updateStats();
+  } else {
+    console.log("저장된 데이터 없음");
+  }
+}
+
+
+
+function updateStats() {
+  for (let key in stats) {
+    const el = document.getElementById(key);
+    if (el) el.textContent = stats[key];
+  }
+  document.getElementById("disease").textContent = stats.disease > 0 ? `병 (${stats.disease}턴 남음)` : "없음";
+
+  const skillDisplayEl = document.getElementById("skillDisplay");
+  if (skillDisplayEl) {
+    skillDisplayEl.textContent = stats.currentSkill ? `${stats.currentSkill} (Lv.${stats.skillLevel})` : "없음";
+  }
+
+  const money2El = document.getElementById("money2");
+  if (money2El) money2El.textContent = stats.money;
+
+  checkDeath();
+  updatePopularityUI();
+  updateHouse();
+  updateFriendshipStatus();
+}
+
+// 친밀도 현황판 업데이트 함수
+function updateFriendshipStatus() {
+  const el = document.getElementById("friendshipStatus");
+  if (!el) return;
+  el.innerHTML = "";
+  for (const name in stats.friendship) {
+    let status;
+    if (stats.friendship[name] >= 50) status = '친함';
+    else if (stats.friendship[name] > 0) status = '보통';
+    else if (stats.friendship[name] < 0) status = '적대적';
+    else status = '아는 사이';
+    
+    // 친밀도 10000은 영구 삭제된 상태로 간주하고 표시하지 않음
+    if (stats.friendship[name] < 10000) {
+        el.innerHTML += `<div>${name}: ${stats.friendship[name]} (${status})</div>`;
+    }
+  }
+}
+
+function checkDeath() {
+  let reason = stats.deathReason || "";
+  if (!reason) {
+    if (stats.health <= 0) reason = "체력 부족으로 죽음";
+    else if (stats.money < 0) reason = "파산으로 죽음"; // 파산 조건 완화
+    else if (stats.hunger <= 0) reason = "기아로 죽음";
+  }
+  if (reason) {
+    alert(`⚰ 강지용은 ${reason}. 새 인생을 시작합니다.`);
+    location.reload();
+  }
+}
+
+// 나쁜 이벤트 목록
+const badEvents = [
+  {text:"비를 쳐맞았다! 체력 -2", effect:()=> stats.health -= 2},
+  {text:"추위에 떨어서 아팠다! 체력 -3", effect:()=> stats.health -= 3},
+  {text:"더위먹었다! 체력 -3", effect:()=> stats.health -= 3},
+  {text:"동네 양아치한테 맞았다! 체력 -5", effect:()=> stats.health -= 5},
+  {text:"절도를 당했다! 돈 -10", effect:()=> stats.money -= 10},
+  {text:"삥뜯겼다! 돈 -5", effect:()=> stats.money -= 5},
+  {text:"똥칠 당했다! 청결도 -5", effect:()=> stats.clean -= 5}
+];
+
+// 부동산 보호 수치
+const houseProtection = {
+  "종이가방": 0, "개집": 1, "판자집": 2, "움막": 3, "럭셔리개집": 5
+};
+// ===== 업적 시스템 데이터 =====
+let achievements = {
+  "짐승만도 못한놈": { earned: false, desc: "좌뇌, 우뇌, 전두엽 다 있는데! 왜 생각을 못하는 걸까?! " },
+  "그지새끼": { earned: false, desc: "손소독제를 스트레이트로 쳐먹다" },
+  "염병주식회사": { earned: false, desc: "ㅈ1ㄴ더러워서 병균들도 기피할듯" },
+  "무능랭킹1위": { earned: false, desc: "무능무능열매 쳐먹으셨나요?" },
+  "창조손해": { earned: false, desc: "열정페이" },
+  "연금술사": { earned: false, desc: "제작에 실패하여 퇴비를 만들었다" }
+};
+
+// 업적 달성 함수
+function achievement(name) {
+  if (achievements[name] && !achievements[name].earned) {
+    achievements[name].earned = true;
+    
+    // 알림 표시
+    const alertBox = document.getElementById("achievementAlert");
+    alertBox.textContent = `업적: ${name}을 달성하였다. 아님말고`;
+    alertBox.style.display = "block";
+    
+    // 3초 후 알림 숨기기
+    setTimeout(() => { alertBox.style.display = "none"; }, 3000);
+    
+    // 리스트 업데이트
+    updateAchievementUI();
+    console.log(`업적: ${name}을 달성하였다. 아님말고`);
+  }
+}
+
+// 업적 UI 업데이트
+function updateAchievementUI() {
+  const container = document.getElementById("earnedAchievements");
+  container.innerHTML = "";
+  
+  let earnedCount = 0;
+  for (let name in achievements) {
+    if (achievements[name].earned) {
+      container.innerHTML += `<div style="margin-bottom:5px; border-bottom:1px solid #333;">
+        <strong>${name}</strong><br><span style="color:#black;">${achievements[name].desc}</span>
+      </div>`;
+      earnedCount++;
+    }
+  }
+  
+  if (earnedCount === 0) container.innerHTML = "아직 없음";
+}
+// 나쁜 이벤트 계산
+function triggerBadEvent(){
+  const protection = houseProtection[house] || 0;
+
+  // 인기도 효과: 인기도 1마다 나쁜이벤트 확률 -5%
+  let badChance = 0.25 - (stats.popularity * 0.05);
+  badChance = Math.max(0.02, badChance); // 최소 2%
+
+  if(stats.popularity <= 0){
+    const e = badEvents[Math.floor(Math.random()*badEvents.length)];
+    e.effect();
+    logEvent(`[인기도 0 패널티] ${e.text}`);
+    return;
+  }
+
+  if(Math.random() < badChance){
+    const e = badEvents[Math.floor(Math.random()*badEvents.length)];
+
+    const before = {...stats};
+    e.effect();
+
+    if(before.health !== stats.health)
+      stats.health += protection;
+    if(before.money !== stats.money)
+      stats.money += protection;
+    if(before.clean !== stats.clean)
+      stats.clean += protection;
+
+    logEvent(`🏠[${house}] 보호 적용 → ${e.text}`);
+  }
+}
+
+function nextTurn() {
+  updateStockPrices();
+  stats.turn++;
+  stats.hunger -= 2;
+  stats.clean -= 2;
+    
+  if(stats.happy <= 50){
+    stats.health -= 1;
+    logEvent("지용이개빡침주의보가 발령됐다.");
+
+  }
+    
+  if(stats.clean <= -10){
+    logEvent("좀 씻어 더러운놈아");
+    achievement('염병주식회사');
+  }
+
+  if(stats.clean <= 0 && stats.disease === 0){
+    stats.disease = 5;
+    logEvent("지용이는 너무 더러워서 병에 걸렸다!");
+  }
+
+  if(stats.disease > 0){
+    stats.health -= 3;
+    stats.disease -= 1;
+  }
+
+  if(stats.turn % 3 === 0){
+    stats.skill = Math.max(1, stats.skill - 1);
+    stats.intelligence = Math.max(1, stats.intelligence - 1);
+    logEvent("시간이 지나며 지용이는 조금 바보가 되어간다...");
+  }
+  
+  // 친밀도에 따른 영향
+  for(const name in stats.friendship){
+      // 친밀도 10000은 영구 삭제된 상대
+      if(stats.friendship[name] < 10000 && stats.friendship[name] < 0){
+          if(Math.random() < 0.05){ 
+              stats.health -= 1;
+              logEvent(`${name}이(가) 지용이에게 침을 뱉었다! 체력 -1`);
+          }
+      }
+  }
+
+
+  // 10% 확률 랜덤 이벤트
+  if(Math.random() < 0.1){
+    const event = events[Math.floor(Math.random() * events.length)];
+    event.effect();
+    logEvent(event.text);
+  }
+
+  triggerBadEvent(); // 나쁜 이벤트 추가
+
+  updateStats();
+}
+
+// 행동 결과 로그
+function log(text){
+  const el = document.getElementById("actionLog");
+  if(el) {
+    // innerHTML을 사용해야 <br> 태그가 줄바꿈으로 작동한다.
+    el.innerHTML = text; 
+  }
+}
+
+
+// 랜덤 이벤트 로그 (히스토리 누적 + 뉴스 팝업)
+let eventHistory = [];
+
+function logEvent(text){
+  const turnNum = stats.turn;
+  eventHistory.push({ turn: turnNum, text: text });
+  // 너무 길어지지 않도록 최근 50개만 유지
+  if (eventHistory.length > 50) eventHistory.shift();
+
+  updateEventLogDisplay();
+  showNewsPopup(text, turnNum);
+}
+
+// 이벤트 로그 창에 히스토리 전체를 계승(누적) 출력
+function updateEventLogDisplay(){
+  const el = document.getElementById("eventLog");
+  if (!el) return;
+  el.innerHTML = eventHistory
+    .slice()
+    .reverse()
+    .map(e => `<div class="newsEntry">[턴 ${e.turn}] ${e.text}</div>`)
+    .join("");
+}
+
+// 뉴스 속보 팝업 표시
+function showNewsPopup(text, turnNum){
+  const overlay = document.getElementById("newsOverlay");
+  const body = document.getElementById("newsBody");
+  const turnLabel = document.getElementById("newsTurnLabel");
+  if (!overlay || !body) return;
+
+  turnLabel.textContent = `턴 ${turnNum}`;
+  body.textContent = text;
+  overlay.style.display = "flex";
+
+  clearTimeout(window._newsPopupTimer);
+  window._newsPopupTimer = setTimeout(() => {
+    overlay.style.display = "none";
+  }, 4000);
+}
+
+function closeNewsPopup(){
+  const overlay = document.getElementById("newsOverlay");
+  if (overlay) overlay.style.display = "none";
+  clearTimeout(window._newsPopupTimer);
+}
+
+
+let duelOver = false;
+let currentEnemy = null;
+
+
+const WEAPON_GACHA_COST = 50; // 무기 뽑기 비용
+const WEAPON_GACHA_LIST = [
+  { name: "짱돌", damage: 1, chance: 10.00 },
+  { name: "지용이의삼년묵은빠따", magicdamage: 1, chance: 15.00 },
+  { name: "벽돌", damage: 1, chance: 25.00 },
+  { name: "나무쪼까리", damage: 1, chance: 25.00 },
+  { name: "이쑤시개", damage: 2, chance: 15.00 },
+  { name: "페트병몽둥이", damage: 1, chance: 9.99 },
+  { name: "레전더리이머전시킹갓제네랄킹왕짱zi존빠따", damage: 999999, chance: 0.01 } 
+]
+
+// game.js 내의 weaponGacha 함수 수정
+function weaponGacha() {
+  if (stats.money < WEAPON_GACHA_COST) {
+    log(`돈이 부족하다. (필요: ${WEAPON_GACHA_COST}원)`);
+    return;
+  }
+  
+  stats.money -= WEAPON_GACHA_COST;
+  let totalChance = WEAPON_GACHA_LIST.reduce((sum, w) => sum + w.chance, 0);
+  let rand = Math.random() * totalChance;
+  let cumulativeChance = 0;
+  let selectedWeapon = null;
+
+  for (const weapon of WEAPON_GACHA_LIST) {
+    cumulativeChance += weapon.chance;
+    if (rand < cumulativeChance) {
+      selectedWeapon = weapon;
+      break;
+    }
+  }
+
+  if (selectedWeapon) {
+    addToInventory(
+      selectedWeapon.name, 
+      0, 
+      selectedWeapon.damage || 0, 
+      selectedWeapon.magicdamage || 0
+    ); 
+    log(`무기 뽑기! ${selectedWeapon.name} 획득!`);
+  }
+  
+  nextTurn();
+}
+
+function executeSkillEffect() {
+  if (!stats.currentSkill) return "단련을해 호구쌉쌉아";
+  
+  let msg = "";
+  stats.skillUsage++; 
+
+  if (stats.currentSkill === "똥뿌리기") {
+    currentEnemy.power = Math.max(1, currentEnemy.power - 3);
+    currentEnemy.health -= 10;
+    msg = "아 개더러워 적이 파상풍걸려서 아파짐 10뎀 3공격력저하";
+  } 
+  else if (stats.currentSkill === "맘브레이킹") {
+    if (stats.skillLevel <= 1) { 
+      if (Math.random() < 0.5) { currentEnemy.health = 0; msg = "쌍놈의자식ㅉㅉ 그걸 터뜨리냐"; }
+      else { stats.health = 0; stats.deathReason = "자폭"; msg = "ㅋ 지용이터졌네"; }
+    } else { 
+      currentEnemy.health -= 50; msg = "🧊 맘브레이킹 II! 50 데미지!";
+    }
+  } 
+  else if (stats.currentSkill === "창백한빠큐") {
+    let ratio = stats.skillLevel === 1 ? 0.05 : (stats.skillLevel === 2 ? 0.1 : 0);
+    if (stats.skillLevel < 3) {
+      let dmg = Math.floor(currentEnemy.health * ratio);
+      currentEnemy.health -= dmg;
+      msg = `🖕 창백한빠큐 ${stats.skillLevel}! 적 체력의 ${ratio*100}% 피해!`;
+    } else {
+      if (stats.health > currentEnemy.health) {
+        stats.health = 0; stats.deathReason = "빠큐 과부하"; msg = "생각을해";
+      } else {
+        currentEnemy.health = stats.health; msg = "니체력과 내체력을 나눠쳐먹자 개돼지야";
+      }
+    }
+  }
+
+  // 레벨업 체크
+  if (stats.skillUsage >= 5 && stats.skillLevel < skillDatabase[stats.currentSkill].maxLevel) {
+    stats.skillLevel++;
+    stats.skillUsage = 0;
+    logEvent(`✨ [${stats.currentSkill}] 레벨업! (${stats.skillLevel}단계)`);
+  }
+  return msg;
+}
+
+function trainSkill() {
+  stats.power += 1;
+  stats.energy -= 10;
+  if (Math.random() < 0.3) {
+    const available = Object.keys(skillDatabase).filter(s => !stats.learnedSkills.includes(s));
+    if (available.length > 0) {
+      const newS = available[Math.floor(Math.random() * available.length)];
+      stats.learnedSkills.push(newS);
+      stats.currentSkill = newS;
+      stats.skillLevel = 1;
+      log(`💪 [${newS} I] 습득!`);
+    }
+  }
+  nextTurn();
+}
+
+// 현재 시장의 모든 주가 출력 예시
+function showAllPrices() {
+  let priceMsg = "현재 주가 정보:<br>"; 
+  for (let name in stockMarket) {
+    priceMsg += `${name}: ${stockMarket[name].price}원 (${stockMarket[name].desc})<br>`;
+  }
+  log(priceMsg);
+}
+function fuckjiyong(){
+  stats.money=10000; stats.clean=10000;  stats.hunger=10000;  stats.health=10000; updateStats();
+};
+function act(type) {
+  // 숨겨진 버튼 초기화
+  document.getElementById("jusibalsell").style.display = "none";
+  document.getElementById("jusibalbuy").style.display = "none";
+  document.getElementById("duelActions").style.display = "none";
+  document.getElementById("workaction").style.display = "none";
+  document.getElementById("eatActions").style.display = "none";
+  document.getElementById("socialActions").style.display = "none";
+  document.getElementById("tributeBox").style.display = "none";
+  document.getElementById("socialDuelBox").style.display = "none";
+  document.getElementById("callFriendBox").style.display = "none";
+  document.getElementById("craftBox").style.display = "none";
+
+  switch(type) {
+    case 'work': startwork(); break;
+    case 'jusikbuy':
+      document.getElementById("jusibalbuy").style.display = "block";
+      break;
+
+    case 'jusiksell':
+      document.getElementById("jusibalsell").style.display = "block";
+      break;
+
+    case 'heal':
+      stats.health += 5; stats.energy += 10; stats.money -= 20;
+      log("지용이는 쳐잠만자서 회복했다.");
+      nextTurn(); break;
+
+    case 'jail':
+      nextStep()
+      break;
+    case 'train':
+      stats.power += 1;
+      stats.energy -= 10;
+      stats.money -= 2;
+
+      // 수정 포인트: stats.learnedSkills가 undefined일 경우 빈 배열([])로 초기화
+      if (!stats.learnedSkills) stats.learnedSkills = [];
+
+      // 30% 확률로 스킬 습득 시도
+      if (Math.random() < 0.3) {
+        // 이제 stats.learnedSkills가 반드시 배열이므로 includes 호출 시 에러가 나지 않습니다.
+        const availableSkills = Object.keys(skillDatabase).filter(s => !stats.learnedSkills.includes(s));
+
+        if (availableSkills.length > 0) {
+          const newSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+          stats.learnedSkills.push(newSkill);
+          stats.currentSkill = newSkill;
+          stats.skillLevel = 1;
+          stats.skillUsage = 0;
+          log(`💪 단련 중 새로운 기술 [${newSkill} I]을(를) 깨달았다!`);
+        } else {
+          log("이미 모든 기술을 마스터하여 근육만 키웠다.");
+        }
+      } else {
+        log("지용이는 단련했다. 근육은 늘었다.");
+      }
+      nextTurn();
+      break;
+    case 'sleep':
+      stats.energy += 20;
+      log("지용이는 푹 잤다.");
+      nextTurn(); break;
+    case 'shop':
+      if (stats.money < 5) { 
+        log("돈이 없다. 현실은 냉정하다."); 
+        nextTurn();
+        break; 
+      }
+      stats.money -= 5;
+      const items = [
+        {name:"돌멩이", price:5}, 
+        {name:"돌덩이", price:10}, 
+        {name:"똥 한 바가지", price:1}
+
+      ];
+      const item = items[Math.floor(Math.random() * items.length)];
+      addToInventory(item.name, item.price);
+      log(`지용이는 ${item.name}을(를) 샀다.`);
+      nextTurn();
+      break;
+
+    case 'eat':
+      if (stats.money < 5) { 
+        log("밥값도 없다. 굶는다."); 
+        stats.hunger -= 1; 
+        nextTurn(); 
+        break; 
+      }
+      document.getElementById("eatActions").style.display = "block";
+      break;
+    case 'study':
+      if (stats.money < 5) { log("돈이 없어 공부를 못했다."); break; }
+      stats.money -= 5; stats.energy -= 10; stats.intelligence += 1;
+      log("지용이는 공부를 했다. 머리가 조금 좋아졌다.");
+      nextTurn(); break;
+    case 'wash':
+      stats.clean = Math.min(10, stats.clean + 5);
+      stats.energy -= 5;
+      log("지용이는 깨끗하게 씻었다. 병에 걸릴 위험이 줄어든다!");
+      nextTurn(); break;
+    case 'duel': startDuel(); break;
+    case 'weaponGacha': weaponGacha(); break;
+    case 'social': 
+        document.getElementById("socialActions").style.display = "block";
+        log("누구와 무엇을 할까요?");
+        break;
+    case 'craft':
+        document.getElementById("craftBox").style.display = "block";
+        log("무엇과 무엇을 합칠까요?");
+        break;
+  }
+}
+// 스킬 정의 데이터
+const skillsData = {
+  "똥뿌리기": {
+    levels: ["똥뿌리기"],
+    desc: "상대의 공격력 감소 및 받는 피해 증가",
+    effect: (enemy) => {
+      enemy.power = Math.max(1, enemy.power - 5);
+      enemy.health -= 5; // 받는 피해 증가 대신 즉시 추가 피해로 구현
+      return "상대방의 공격력을 낮추고 피해를 입혔습니다!";
+    }
+  },
+  "맘브레이킹": {
+    levels: ["맘브레이킹I", "맘브레이킹II"],
+    effect: (enemy) => {
+      if (stats.skillLevel === 0) { // I 단계
+        if (Math.random() < 0.5) {
+          stats.health = 0;
+          stats.deathReason = "맘브레이킹 역풍";
+          return "자폭했습니다!";
+        } else {
+          enemy.health = 0;
+          return "적을 즉사시켰습니다!";
+        }
+      } else { // II 단계
+        return "적을 한 턴 동안 무력화시켰습니다!"; // 로직상 한 턴 대미지 무효화 등 추가 가능
+      }
+    }
+  },
+  "창백한빠큐": {
+    levels: ["창백한빠큐I", "창백한빠큐II", "창백한빠큐III"],
+    effect: (enemy) => {
+      if (stats.skillLevel === 0) {
+        let dmg = enemy.health * 0.05;
+        enemy.health -= dmg;
+        return `적 체력의 5%(${dmg.toFixed(1)})를 깎았습니다!`;
+      } else if (stats.skillLevel === 1) {
+        let dmg = enemy.health * 0.1;
+        enemy.health -= dmg;
+        return `적 체력의 10%(${dmg.toFixed(1)})를 깎았습니다!`;
+      } else {
+        if (stats.health > enemy.health) {
+          stats.health = 0;
+          stats.deathReason = "너무 높은 체력으로 인한 빠큐 과부하";
+          return "자신이 사망했습니다!";
+        }
+        enemy.health = stats.health;
+        return "상대와 자신의 체력을 동일하게 만들었습니다!";
+      }
+    }
+  }
+};
+// 대인관계 UI 표시 함수
+function showTribute() { 
+  document.getElementById("socialActions").style.display = "none";
+  document.getElementById("tributeBox").style.display = "block"; 
+}
+function showSocialDuel() { 
+  document.getElementById("socialActions").style.display = "none";
+  document.getElementById("socialDuelBox").style.display = "block"; 
+}
+
+// 조공 바치기 로직
+function tributeChoice(target) {
+  const cost = 10;
+  if (stats.money < cost) {
+    log("밥값도 없는데 왜 조공을 바쳐(10원필요함빡대야)");
+    document.getElementById("tributeBox").style.display = "none";
+    nextTurn();
+    return;
+  }
+  
+  if (stats.friendship[target] >= 10000) {
+      log("잘하는짓이다");
+      document.getElementById("tributeBox").style.display = "none";
+      nextTurn();
+      return;
+  }
+
+  const increase = Math.floor(Math.random() * 5) + 1;
+  stats.money -= cost;
+  stats.friendship[target] = Math.min(100, stats.friendship[target] + increase);
+  stats.happy += 2;
+  stats.popularity += 1;
+  log(`${target}에게 ${cost}원을 조공 바쳤다! 친밀도 +${increase}.`);
+  
+  document.getElementById("tributeBox").style.display = "none";
+  nextTurn();
+}
+
+// 친밀도 결투 시작
+function socialDuelChoice(target) {
+    document.getElementById("socialDuelBox").style.display = "none";
+
+    if (stats.friendship[target] >= 10000) {
+        log(`${target}는 이미 후드려팼다.`);
+        nextTurn();
+        return;
+    }
+    
+    const enemyData = friendsAsEnemies[target];
+    currentEnemy = {
+        name: target,
+        health: enemyData.health,
+        power: enemyData.power,
+        money: enemyData.money
+    };
+    
+    const affinityReduction = stats.friendship[target] * 0.2;
+    currentEnemy.health = Math.max(5, currentEnemy.health - affinityReduction);
+    currentEnemy.power = Math.max(1, currentEnemy.power - (affinityReduction/5));
+    
+    stats.friendship[target] = Math.max(-100, stats.friendship[target] - 10); 
+
+    duelOver = false;
+    log(`${currentEnemy.name}에게 결투를 걸었다! (친밀도 -10)`);
+    document.getElementById("duelActions").style.display = "block";
+}
+
+function rice() {
+    const audio = new Audio('rice.mp3');
+    audio.play();
+}
+
+
+// 밥 선택
+function eatChoice(food) {
+  let msg = "";
+
+  switch(food) {
+    case 'ricenoodle':
+      rice();
+
+      stats.hunger += 10;
+      stats.happy += 5;
+      stats.money -= 50;
+      msg = "쩝쩝쩝쩝쩝쩝쩝쩝쩝쩝쩝 포만감 +10, 행복 +5.하지만 호구당했다.";
+      break;
+    case 'stonerice':
+
+      stats.hunger += 15;
+      stats.health -= 1;
+      stats.happy -= 10;
+      stats.energy -= 5;
+      stats.money -= 5;
+      msg = "지용이는 돌밥에 물을 말아서, 진흙탕밥으로 만들고 야무지게 쳐잡수셨다. 포만감+15, 체력-1, 행복도-10, 에너지-5";
+      break;
+    case 'soju':
+      stats.hunger += 5;
+      stats.health -= 5;
+      stats.happy -= 10;
+      stats.clean = 5;
+      stats.money -= 20;
+      stats.disease = 0;
+      msg = "지용이는 병신정원대신에 손소독제를 먹어 자기치유를 했다.";
+      achievement('그지새끼')
+      break;
+    case 'aguchang':
+      stats.hunger += 500;
+      stats.money -= 100;
+      stats.happy += 2;
+      stats.intelligence -= 1;
+      msg = "지용이가 죽빵12개월치를 먹었다. 포만감 +500, 행복 +2, 지능 -1";
+      break;
+  }
+  document.getElementById("eatActions").style.display = "none";
+  log(msg);
+  nextTurn();
+}
+
+// 일반 랜덤 상대
+const duelEnemies = [
+    { name: "엄엄엄엄사후르", health: 20, power: 30, money: 99, pop: 5 },
+    { name: "짭퉁도윤이", health: 20, power: 10, money: 15, pop: 2 },
+    { name: "개미", health: 1, power: 3, money: 0, pop: 0 },
+    { name: "개(dog)", health: 35, power: 6, money: 20, pop: 1 },
+    { name: "초등학교4짱", health: 50, power: 9, money: 30, pop: 10 },
+    { name: "엄마손파이", health: 20, power: 3, money: -10, pop: -1 },
+    { name: "할머니뼈해장국", health: 20, power: 3, money: -10, pop: -1 }
+];
+
+// 지정 호출 전용 상대
+const specialEnemies = [
+    { name: "따까리", health: 20, power: 3, money: -10, pop: -1 },
+    { name: "짭퉁지용", health: 27, power: 5, money: 15, pop: 3 },
+    { name: "M0M BREAKER", health: 40, power: 7, money: 30, pop: 8 },
+    { name: "니얼굴", health: 56, power: 9, money: 50, pop: 12 },
+    { name: "알1빠노 사우르스", health: 300, power: 45, money: 300, pop: 50 },
+    { name: "시크맨", health: 200, power: 70, money: 300, pop: 70 },
+    { name: "엄왕", health: 2000, power: 700, money: 1000, pop: 200 },
+    { name: "맘가나이트", health: 4000, power: 500, money: 2000, pop: 500 },
+    { name: "레전드맘", health: 10000, power: 1000, money: 4000, pop: 1000 },
+    { name: "노맘세상", health: 10000000000, power: 1000000000000, money: 0, pop: 999999 }
+];
+function startDuel(targetName = null) {
+    let enemy;
+    if (targetName) {
+        enemy = specialEnemies.find(e => e.name === targetName);
+        if (!enemy) { console.error("ㅈㄹㄴㄴ:", targetName); return; }
+    } else {
+        enemy = duelEnemies[Math.floor(Math.random() * duelEnemies.length)];
+    }
+
+    currentEnemy = {
+        name: enemy.name,
+        health: enemy.health,
+        power: enemy.power,
+        money: enemy.money,
+        pop: enemy.pop || 0  // 인기도 보상 추가
+    };
+
+    duelOver = false;
+    log(`${currentEnemy.name}이(가) 결투를 신청했다!`);
+    document.getElementById("duelActions").style.display = "block";
+}
+
+function startwork() {
+  log(`로동을 갈곳`);
+  document.getElementById("workaction").style.display = "block";
+}
+let sujun = 0;
+function workturn(action) {
+  let msg = "";
+  document.getElementById("workaction").style.display = "none";
+
+  switch(action){
+    case 'coalmine':
+      stats.energy -= 15;
+      const moneyEarned = Math.floor(Math.random() * 20) + 5;
+      stats.money += moneyEarned;
+      stats.happy -= 5;
+      msg = `탄광에서 일했다. 에너지 -15, 돈 +${moneyEarned}, 행복 -5`;
+      break;
+    case 'fuckwork':
+      if (sujun >= 10){
+        achievement('창조손해') ;
+      }
+      stats.energy -= 15;
+      const yourmom = Math.floor(Math.random() * 20) + 5;
+      sujun +=1;
+      stats.money -= yourmom;
+      stats.happy -= 5;
+      msg = `돈내고 로동했다. 에너지 -15, 돈 -${yourmom}, 행복 -5`;
+      break;
+    case 'beg':
+      stats.energy -= 5;
+      const begMoney = Math.floor(Math.random() * 5) + 1;
+      stats.money += begMoney;
+      msg = `구걸했다. 에너지 -5, 돈 +${begMoney}`;
+      break;
+    case 'robber':
+      stats.energy -= 20;
+      const success = Math.random() < 0.5;
+      if(success){
+        const stolen = Math.floor(Math.random() * 50) + 10;
+        stats.money += stolen;
+        msg = `삥뜯기 성공! 돈 +${stolen}, 에너지 -20`;
+      } else {
+        stats.health -= 10;
+        msg = `삥뜯기 실패! 체력 -10, 에너지 -20`;
+      }
+      break;
+  }
+  
+  log(msg);
+  nextTurn();
+}
+
+// 친구 부르기 UI 표시
+function showCallFriend() { 
+  document.getElementById("callFriendBox").style.display = "block"; 
+  log("누구를 부를까요? (친밀도 20 이상, 돈 10 필요)");
+}
+
+// 친구 부르기 로직
+function callFriend(friendName) {
+  document.getElementById("callFriendBox").style.display = "none";
+  if (!currentEnemy || duelOver) {
+    log("결투 중이 아닙니다.");
+    nextTurn();
+    return;
+  }
+  
+  const affinity = stats.friendship[friendName] || 0;
+  const cost = 10;
+
+  if (affinity < 20) {
+    log("친구비를 주자");
+    return;
+  }
+
+  if (stats.money < cost) {
+    log("친구가 올 차비가 없다(돈 -10 필요.그지야)");
+    return;
+  }
+  
+  stats.money -= cost;
+  
+  const baseDmg = friendCallDamage[friendName] || 5;
+  const dmg = Math.floor(baseDmg + (affinity * 0.5));
+  
+  currentEnemy.health -= dmg;
+  stats.friendship[friendName] = Math.max(-100, affinity - 5); 
+
+  let msg = `${friendName}가 출동하여 ${currentEnemy.name}에게 ${dmg} 피해! (친밀도 -5). `;
+
+  if (currentEnemy.health <= 0) {
+    stats.money += currentEnemy.money;
+    msg += `승리! 💸 ${currentEnemy.money}원을 얻었다!`;
+    
+    if(stats.friendship.hasOwnProperty(currentEnemy.name) && stats.friendship[currentEnemy.name] !== 10000){
+        stats.friendship[currentEnemy.name] = 10000;
+        msg += ` ${currentEnemy.name}를 처치했다`;
+    }
+    
+    duelOver = true;
+    document.getElementById("duelActions").style.display = "none";
+  }
+
+  log(msg);
+  nextTurn();
+}
+
+// 장착 무기의 총 물리/마법 피해량 반환
+function getWeaponBonus() {
+  if (!stats.equippedWeapon) return { damage: 0, magicdamage: 0 };
+  return {
+    damage: stats.equippedWeapon.damage || 0,
+    magicdamage: stats.equippedWeapon.magicdamage || 0
+  };
+}
+
+function duelTurn(action) {
+  if (duelOver) return;
+
+  let logMsg = "";
+  let playerActed = true; // 반격을 받을지 여부
+
+  // 1. 플레이어 행동 처리
+  if (action === 'attack') {
+    // 일반 공격: 공격력(power) 기반 랜덤 데미지 + 장착 무기 보너스
+    const weaponBonus = getWeaponBonus();
+    const damage = Math.floor(Math.random() * stats.power) + 5 + weaponBonus.damage;
+    currentEnemy.health -= damage;
+    logMsg = `👊 지용이의 공격! ${currentEnemy.name}에게 ${damage}의 피해를 입혔다!`;
+    if (weaponBonus.damage > 0) {
+      logMsg += ` (🗡️${stats.equippedWeapon.name} +${weaponBonus.damage})`;
+    }
+  } 
+  else if (action === 'fireegg') {
+    // 필살기: 지능 기반, 확률적 큰 데미지 + 장착 무기 마법 보너스
+    const weaponBonus = getWeaponBonus();
+    if (Math.random() < 0.3 + (stats.intelligence * 0.05)) {
+      const critDamage = stats.power * 3 + weaponBonus.magicdamage;
+      currentEnemy.health -= critDamage;
+      logMsg = `🔥 [불알치기] 성공! ${critDamage}의 치명타를 입혔다!`;
+      if (weaponBonus.magicdamage > 0) {
+        logMsg += ` (✨${stats.equippedWeapon.name} +${weaponBonus.magicdamage})`;
+      }
+    } else {
+      logMsg = `❌ 불알치기 실패! 헛방을 날렸다.`;
+    }
+  } 
+  else if (action === 'skill') {
+    // 스킬 시스템 호출 (executeSkillEffect 함수와 연동)
+    if (!stats.currentSkill) {
+      log("장착된 스킬이 없다!");
+      return;
+    }
+    logMsg = executeSkillEffect(); // 스킬 효과 실행 및 메시지 반환
+  }
+  else if (action === 'take') {
+    // 맞기: 공격하지 않고 그냥 버틴다 (다음 턴 반격 데미지 절반)
+    logMsg = "🛡️ 지용이는 이를 악물고 버텼다. (다음 피해 절반)";
+  }
+  else if (action === 'suicide') {
+    // 자폭: 자신의 체력을 희생해 적에게 큰 피해
+    const selfDamage = Math.floor(stats.health * 0.5) + 5;
+    const dealtDamage = selfDamage * 3;
+    stats.health -= selfDamage;
+    currentEnemy.health -= dealtDamage;
+    logMsg = `💥 지용이는 자폭했다! 자신에게 ${selfDamage}, ${currentEnemy.name}에게 ${dealtDamage}의 피해!`;
+    if (stats.health <= 0) {
+      stats.health = 0;
+      updateStats();
+      stats.deathReason = "자폭으로 산화";
+      checkDeath();
+      return;
+    }
+  }
+  else if (action === 'run') {
+    // 쫄튀: 지능 기반 확률로 결투에서 도망
+    const escapeChance = 0.4 + (stats.intelligence * 0.02);
+    if (Math.random() < escapeChance) {
+      duelOver = true;
+      document.getElementById("duelActions").style.display = "none";
+      log("🏃 지용이는 쫄아서 튀었다! 결투 도망 성공.");
+      currentEnemy = null;
+      nextTurn();
+      return;
+    } else {
+      logMsg = "🏃 도망치려 했지만 붙잡혔다!";
+    }
+  }
+
+  log(logMsg);
+
+  // 2. 승리 체크
+  if (currentEnemy.health <= 0) {
+    currentEnemy.health = 0;
+    updateStats();
+    winDuel();
+    return;
+  }
+
+  // 3. 적의 턴 (반격)
+  setTimeout(() => {
+    if (duelOver) return;
+
+    // 적의 데미지 계산 (적의 공격력 - 지용이의 방어적 요소)
+    let enemyDamage = Math.max(1, Math.floor(Math.random() * currentEnemy.power));
+    if (action === 'take') enemyDamage = Math.ceil(enemyDamage / 2);
+    stats.health -= enemyDamage;
+    
+    log(`⚠️ ${currentEnemy.name}의 반격! ${enemyDamage}의 피해를 입었다!`);
+    
+    // 4. 패배 체크
+    if (stats.health <= 0) {
+      stats.health = 0;
+      updateStats();
+      stats.deathReason = `${currentEnemy.name}과의 결투에서 패배`;
+      checkDeath();
+    }
+
+    updateStats();
+  }, 600); // 0.6초 뒤 적이 공격 (시각적 연출)
+
+  updateStats();
+}
+
+
+function winDuel() {
+    duelOver = true;
+    
+    // 적 데이터에 설정된 보상 가져오기
+    const rewardMoney = currentEnemy.money;
+    const rewardPop = currentEnemy.pop;
+    
+    stats.money += rewardMoney;
+    stats.popularity += rewardPop;
+    
+    log(`🎊 승리! ${currentEnemy.name}을(를) 물리쳤습니다!`);
+    log(`💰 보상: ${rewardMoney}원 / ⭐ 인기도: ${rewardPop > 0 ? '+' : ''}${rewardPop}`);
+
+    setTimeout(() => {
+        const duelUI = document.getElementById("duelActions");
+        if(duelUI) duelUI.style.display = "none";
+        
+        // 친밀도 보너스 (적이 친구 리스트에 있는 경우)
+        if (stats.friendship && stats.friendship[currentEnemy.name] !== undefined) {
+            stats.friendship[currentEnemy.name] += 10;
+            log(`🤝 ${currentEnemy.name}는 지용이를 천하의 시발롬이라고 여깁니다 -10친밀도`);
+        }
+        
+        currentEnemy = null;
+        updateStats();
+    }, 1500);
+}
+
+// ===== 인벤토리 =====
+let inventory = [];
+
+// 아이템 조합(제작) 레시피 테이블
+// 키는 "아이템A+아이템B" 형태 (양방향 모두 체크함)
+const craftRecipes = {
+  "돌멩이+돌멩이": { name: "벽돌", price: 10, damage: 1, magicdamage: 0 },
+  "돌멩이+돌덩이": { name: "짱돌", price: 15, damage: 1, magicdamage: 0 },
+  "돌덩이+돌덩이": { name: "나무쪼까리", price: 12, damage: 1, magicdamage: 0 },
+  "나무쪼까리+이쑤시개": { name: "페트병몽둥이", price: 20, damage: 1, magicdamage: 0 },
+  "짱돌+나무쪼까리": { name: "지용이의삼년묵은빠따", price: 40, damage: 0, magicdamage: 1 },
+  "벽돌+벽돌": { name: "이쑤시개", price: 8, damage: 2, magicdamage: 0 },
+  "똥 한 바가지+똥 한 바가지": { name: "퇴비", price: 3, damage: 0, magicdamage: 0 },
+  "페트병몽둥이+지용이의삼년묵은빠따": { name: "레전더리이머전시킹갓제네랄킹왕짱zi존빠따", price: 500, damage: 999999, magicdamage: 0 }
+};
+
+const COMPOST_ITEM = { name: "퇴비", price: 1, damage: 0, magicdamage: 0 };
+
+// 1. addToInventory 함수 수정
+function addToInventory(itemName, price, damage = 0, magicdamage = 0) {
+  if (inventory.length >= 3) {
+    const sold = inventory.shift();
+    // 버려지는 아이템이 장착 중이었다면 해제
+    if (stats.equippedWeapon && stats.equippedWeapon.name === sold.name && stats.equippedWeapon.__slotRef === sold) {
+      stats.equippedWeapon = null;
+    }
+    stats.money += sold.price;
+    log(`인벤 꽉참 → '${sold.name}' 자동 판매 (+${sold.price}원)`);
+  }
+  // magicdamage 속성 추가 저장
+  inventory.push({ name: itemName, price: price, damage: damage, magicdamage: magicdamage });
+  updateInventory();
+}
+
+// 2. updateInventory 함수 수정 (장착/조합 버튼 포함)
+function updateInventory() {
+  const el = document.getElementById("inventory");
+  if (!el) return;
+  el.innerHTML = "";
+  
+  if (inventory.length === 0) { 
+    el.innerHTML = "<p>비어있음</p>"; 
+    return; 
+  }
+  
+  inventory.forEach((item, idx) => {
+    let details = [];
+    details.push(`${item.price}원`); // 가격 정보
+
+    if (item.damage > 0) details.push(`피해 +${item.damage}`); // 물리 데미지
+    if (item.magicdamage > 0) details.push(`마법 +${item.magicdamage}`); // 마법 데미지
+    
+    const infoText = details.join(" / ");
+    const isEquipped = stats.equippedWeapon === inventory[idx];
+    const equipBtn = isEquipped
+      ? `<button onclick="unequipItem()" style="font-size:11px;padding:3px 6px;">해제</button>`
+      : `<button onclick="equipItem(${idx})" style="font-size:11px;padding:3px 6px;">장착</button>`;
+
+    el.innerHTML += `<div style="margin-bottom:4px;">${idx + 1}. ${item.name} (${infoText}) ${isEquipped ? '⚔️장착중' : ''}<br>${equipBtn}</div>`;
+  });
+
+  // 장착 중인 무기 표시
+  const equipEl = document.getElementById("equippedDisplay");
+  if (equipEl) {
+    equipEl.textContent = stats.equippedWeapon ? stats.equippedWeapon.name : "없음";
+  }
+}
+
+// 아이템 장착
+function equipItem(idx) {
+  if (!inventory[idx]) return;
+  stats.equippedWeapon = inventory[idx];
+  log(`⚔️ '${inventory[idx].name}'을(를) 장착했다!`);
+  updateInventory();
+}
+
+// 아이템 장착 해제
+function unequipItem() {
+  if (stats.equippedWeapon) {
+    log(`'${stats.equippedWeapon.name}' 장착 해제.`);
+  }
+  stats.equippedWeapon = null;
+  updateInventory();
+}
+
+// 판매 기능
+function showSell(){ document.getElementById("sellBox").style.display = "block"; }
+
+function sellItem(idx){
+  document.getElementById("sellBox").style.display = "none";
+  if(inventory[idx]){
+    // 장착 중인 아이템이면 해제
+    if (stats.equippedWeapon === inventory[idx]) {
+      stats.equippedWeapon = null;
+    }
+    const item = inventory.splice(idx,1)[0];
+    stats.money += item.price;
+    log(`'${item.name}' 판매! +${item.price}원`);
+    updateInventory();
+  } else {
+    log("그 항목이 없습니다.");
+  }
+  nextTurn();
+}
+
+// ===== 제작(조합) 기능 =====
+function showCraft() {
+  document.getElementById("craftBox").style.display = "block";
+}
+
+// idx1, idx2: 인벤토리 인덱스 (0~2). 두 아이템을 합쳐 새 아이템 1개를 만든다.
+function craftItems(idx1, idx2) {
+  if (idx1 === idx2 || !inventory[idx1] || !inventory[idx2]) {
+    log("합칠 아이템이 없다. 인벤토리를 확인해봐.");
+    return;
+  }
+
+  const itemA = inventory[idx1];
+  const itemB = inventory[idx2];
+  const key1 = `${itemA.name}+${itemB.name}`;
+  const key2 = `${itemB.name}+${itemA.name}`;
+  const recipe = craftRecipes[key1] || craftRecipes[key2];
+
+  // 장착 중이던 재료가 있으면 해제
+  if (stats.equippedWeapon === itemA || stats.equippedWeapon === itemB) {
+    stats.equippedWeapon = null;
+  }
+
+  // 두 아이템 제거 (인덱스 큰 것부터 삭제해야 안전)
+  const [hi, lo] = idx1 > idx2 ? [idx1, idx2] : [idx2, idx1];
+  inventory.splice(hi, 1);
+  inventory.splice(lo, 1);
+
+  if (recipe) {
+    addToInventory(recipe.name, recipe.price, recipe.damage, recipe.magicdamage);
+    log(`🔨 [제작 성공] ${itemA.name} + ${itemB.name} → ${recipe.name}!`);
+  } else {
+    addToInventory(COMPOST_ITEM.name, COMPOST_ITEM.price, COMPOST_ITEM.damage, COMPOST_ITEM.magicdamage);
+    log(`💩 [제작 실패] ${itemA.name} + ${itemB.name}은(는) 레시피가 없어 퇴비가 되었다...`);
+    achievement('연금술사');
+  }
+
+  document.getElementById("craftBox").style.display = "none";
+  updateInventory();
+  nextTurn();
+}
+
+window.explore = function() {
+  document.getElementById("exploreBox").style.display = "block";
+};
+
+function nextStep() {
+  step++;
+
+  switch(step) {
+    case 1: startDuel('따까리'); break;
+    case 2: startDuel('짭퉁지용'); break;
+    case 3: startDuel('니얼굴'); break;
+    case 4: startDuel('알1빠노 사우르스'); break;
+    case 5: startDuel('시크맨'); break;
+    case 6: startDuel('엄왕'); break;
+    case 7: startDuel('맘가나이트'); break;
+    case 8: startDuel('레전드맘'); break;
+    case 9: startDuel('노맘세상'); break;
+    default: log('겜알못수준 ㅉㅉㅉㅉ '); break;
+  }
+}
+
+// 장소별 탐험 랜덤 이벤트
+const exploreEvents = [
+  {name:"놀이터", effect:()=>{
+      const events = [
+        {text: "엄1마가 시123비를 걸었다.", effect: () => { startDuel('엄왕'); }},
+        {text: "자빠졌다! 체력 -10", effect: () => { stats.health -= 10; }},
+        {text: "놀이기구를 파손했다! 돈 -1000", effect: () => { stats.money -= 1000; }}
+      ];
+      const event = events[Math.floor(Math.random() * events.length)];
+      event.effect();
+      return `놀이터 탐험: ${event.text}`;
+  }},
+  {name:"시궁창", effect:()=>{
+      const events = [
+        {text: "똥물의 적셔졌다..", effect: () => { stats.disease = 5;; }},
+        {text: "향기로운 체력 -10", effect: () => { stats.health -= 10; }},
+        {text: "지용이는 결투를 신청하였다!!!! 돈 -1000", effect: () => { nextStep(); }}
+      ];
+      const event = events[Math.floor(Math.random() * events.length)];
+      event.effect();
+      return `시궁창 침입: ${event.text}`;
+  }},
+  {name:"유치원", effect:()=>{
+      const events = [
+        {text: "쫓겨났다! 행복도 -50", effect: () => { stats.happy -= 50; }},
+        {text: "아구창을 맞았다! 체력 -10", effect: () => { stats.health -= 10; }},
+        {text: "간식을 뺏어먹었다! 행복도 +10, 포만감 +2", effect: () => { stats.happy += 10; stats.hunger += 2; }}
+      ];
+      const event = events[Math.floor(Math.random() * events.length)];
+      event.effect();
+      return `유치원 탐험: ${event.text}`;
+  }},
+  {name:"남의개집", effect:()=>{
+      const events = [
+        {text: "개에게 물렸다! 체력 -500", effect: () => { stats.health -= 500; }},
+        {text: "개밥을 쳐먹었다! 행복도 +15, 포만감 +5", effect: () => { stats.happy += 15; stats.hunger += 5; }},
+        {text: "고발당했다! 돈 -1000000000000", effect: () => {
+            stats.money -= 1000000000000; 
+            if (stats.money <= 0) stats.deathReason = "지용이는 고발되어 파산했다";
+        }}
+
+          
+      ];
+      const event = events[Math.floor(Math.random() * events.length)];
+      event.effect();
+      return `남의개집 탐험: ${event.text}`;
+  }}
+];
+
+// 탐험 선택 처리
+window.exploreChoice = function(idx) {
+  document.getElementById("exploreBox").style.display = "none";
+  if (exploreEvents[idx]) {
+    const msg = exploreEvents[idx].effect();
+    log(msg);
+    nextTurn();
+  }
+};
+
+
+// ===== 부동산 =====
+let house = "종이가방"; 
+const housePrices = {
+  "종이가방": 0, "개집": 50, "판자집": 100, "움막": 200, "럭셔리개집": 500
+};
+
+function buyHouse(newHouse){
+  const price = housePrices[newHouse];
+  if(stats.money >= price){
+    stats.money -= price;
+    house = newHouse;
+    log(`새 집 구매! '${house}' 획득 (-${price}원)`);
+    updateHouse();
+  } else {
+    log("돈이 부족해 집을 살 수 없다...");
+  }
+  nextTurn();
+}
+
+function updateHouse(){
+  const el = document.getElementById("currentHouse");
+  if(el) el.textContent = house;
+}
+
+// 인기도 바 UI 업데이트 함수
+function updatePopularityUI(){
+  const num = document.getElementById("popularity");
+  if(!num || typeof stats.popularity === "undefined") return;
+
+  stats.popularity = Math.max(0, Math.min(10, Math.round(stats.popularity)));
+  num.textContent = stats.popularity;
+}
+
+
+// 초기화 및 로드
+updateInventory();
+updateStats();
+
+</script>
+
+</body>
+</html>
