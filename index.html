@@ -584,37 +584,84 @@ const friendCallDamage = {
 };
 
 
+const SAVE_KEY = "jiyongSaveDataV2";
+
 function saveProgress() {
-  localStorage.setItem("jiyongSave", JSON.stringify(stats));
-  localStorage.setItem("jiyongInventory", JSON.stringify(inventory));
-  localStorage.setItem("jiyongHouse", JSON.stringify(house));
+  const equippedWeaponIndex = inventory.indexOf(stats.equippedWeapon);
+  const savedStats = { ...stats, equippedWeapon: null };
+  const saveData = {
+    version: 2,
+    stats: savedStats,
+    inventory,
+    house,
+    equippedWeaponIndex
+  };
+
+  localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
   console.log("저장됨");
 }
 
 function loadProgress() {
-  const saved = localStorage.getItem("jiyongSave");
-  if (saved) {
-    stats = JSON.parse(saved);
+  try {
+    const savedData = localStorage.getItem(SAVE_KEY);
+    let loadedStats;
+    let loadedInventory;
+    let loadedHouse;
+    let equippedWeaponIndex = -1;
+
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      loadedStats = parsed.stats;
+      loadedInventory = parsed.inventory;
+      loadedHouse = parsed.house;
+      equippedWeaponIndex = Number.isInteger(parsed.equippedWeaponIndex)
+        ? parsed.equippedWeaponIndex
+        : -1;
+    } else {
+      // 기존 세 개의 저장 키도 계속 불러올 수 있게 유지한다.
+      const savedStats = localStorage.getItem("jiyongSave");
+      if (!savedStats) {
+        console.log("저장된 데이터 없음");
+        return;
+      }
+      loadedStats = JSON.parse(savedStats);
+      const savedInventory = localStorage.getItem("jiyongInventory");
+      const savedHouse = localStorage.getItem("jiyongHouse");
+      loadedInventory = savedInventory ? JSON.parse(savedInventory) : [];
+      loadedHouse = savedHouse ? JSON.parse(savedHouse) : "종이가방";
+
+      // 예전 저장 데이터는 장착 무기가 별도 객체로 복원되므로 인벤토리 항목을 다시 찾는다.
+      if (loadedStats.equippedWeapon) {
+        equippedWeaponIndex = loadedInventory.findIndex(item =>
+          item.name === loadedStats.equippedWeapon.name &&
+          (item.damage || 0) === (loadedStats.equippedWeapon.damage || 0) &&
+          (item.magicdamage || 0) === (loadedStats.equippedWeapon.magicdamage || 0)
+        );
+      }
+    }
+
+    stats = loadedStats;
+    inventory = Array.isArray(loadedInventory) ? loadedInventory : [];
+    house = Object.prototype.hasOwnProperty.call(housePrices, loadedHouse)
+      ? loadedHouse
+      : "종이가방";
+
     // friendship 데이터가 없을 경우 초기화 (호환성)
     if (!stats.friendship) {
-        stats.friendship = {
-            '제임스브라운': 0, '블랙맨': 0, '화이트맨': 0, '맘지용': 0, '개돼지': 0, '원숭이': 0, '침팬치': 0
-        };
+      stats.friendship = {
+        '제임스브라운': 0, '블랙맨': 0, '화이트맨': 0, '맘지용': 0,
+        '개돼지': 0, '원숭이': 0, '침팬치': 0
+      };
     }
-    if (stats.equippedWeapon === undefined) stats.equippedWeapon = null;
-
-    const savedInv = localStorage.getItem("jiyongInventory");
-    if (savedInv) inventory = JSON.parse(savedInv);
-
-    const savedHouse = localStorage.getItem("jiyongHouse");
-    if (savedHouse) house = JSON.parse(savedHouse);
+    stats.equippedWeapon = inventory[equippedWeaponIndex] || null;
 
     console.log("불러오기 완료");
     updateInventory();
     updateHouse();
     updateStats();
-  } else {
-    console.log("저장된 데이터 없음");
+  } catch (error) {
+    console.error("저장 데이터를 불러오지 못했습니다.", error);
+    log("저장 데이터가 손상되어 불러오지 못했습니다.");
   }
 }
 
@@ -883,6 +930,16 @@ function closeNewsPopup(){
 
 let duelOver = false;
 let currentEnemy = null;
+let duelActionPending = false;
+
+function setDuelActionPending(pending) {
+  duelActionPending = pending;
+  const duelActions = document.getElementById("duelActions");
+  if (!duelActions) return;
+  duelActions.querySelectorAll("button").forEach(button => {
+    button.disabled = pending;
+  });
+}
 
 
 const WEAPON_GACHA_COST = 50; // 무기 뽑기 비용
@@ -1217,7 +1274,8 @@ function socialDuelChoice(target) {
         name: target,
         health: enemyData.health,
         power: enemyData.power,
-        money: enemyData.money
+        money: enemyData.money,
+        pop: enemyData.pop || 0
     };
     
     const affinityReduction = stats.friendship[target] * 0.2;
@@ -1227,6 +1285,7 @@ function socialDuelChoice(target) {
     stats.friendship[target] = Math.max(-100, stats.friendship[target] - 10); 
 
     duelOver = false;
+    setDuelActionPending(false);
     log(`${currentEnemy.name}에게 결투를 걸었다! (친밀도 -10)`);
     document.getElementById("duelActions").style.display = "block";
 }
@@ -1324,6 +1383,7 @@ function startDuel(targetName = null) {
     };
 
     duelOver = false;
+    setDuelActionPending(false);
     log(`${currentEnemy.name}이(가) 결투를 신청했다!`);
     document.getElementById("duelActions").style.display = "block";
 }
@@ -1445,7 +1505,10 @@ function getWeaponBonus() {
 }
 
 function duelTurn(action) {
-  if (duelOver) return;
+  if (duelOver || duelActionPending || !currentEnemy) return;
+
+  setDuelActionPending(true);
+  const actingEnemy = currentEnemy;
 
   let logMsg = "";
   let playerActed = true; // 반격을 받을지 여부
@@ -1479,6 +1542,7 @@ function duelTurn(action) {
     // 스킬 시스템 호출 (executeSkillEffect 함수와 연동)
     if (!stats.currentSkill) {
       log("장착된 스킬이 없다!");
+      setDuelActionPending(false);
       return;
     }
     logMsg = executeSkillEffect(); // 스킬 효과 실행 및 메시지 반환
@@ -1510,6 +1574,7 @@ function duelTurn(action) {
       document.getElementById("duelActions").style.display = "none";
       log("🏃 지용이는 쫄아서 튀었다! 결투 도망 성공.");
       currentEnemy = null;
+      setDuelActionPending(false);
       nextTurn();
       return;
     } else {
@@ -1529,7 +1594,7 @@ function duelTurn(action) {
 
   // 3. 적의 턴 (반격)
   setTimeout(() => {
-    if (duelOver) return;
+    if (duelOver || currentEnemy !== actingEnemy) return;
 
     // 적의 데미지 계산 (적의 공격력 - 지용이의 방어적 요소)
     let enemyDamage = Math.max(1, Math.floor(Math.random() * currentEnemy.power));
@@ -1547,6 +1612,7 @@ function duelTurn(action) {
     }
 
     updateStats();
+    setDuelActionPending(false);
   }, 600); // 0.6초 뒤 적이 공격 (시각적 연출)
 
   updateStats();
@@ -1555,10 +1621,11 @@ function duelTurn(action) {
 
 function winDuel() {
     duelOver = true;
+    setDuelActionPending(false);
     
     // 적 데이터에 설정된 보상 가져오기
-    const rewardMoney = currentEnemy.money;
-    const rewardPop = currentEnemy.pop;
+    const rewardMoney = Number.isFinite(currentEnemy.money) ? currentEnemy.money : 0;
+    const rewardPop = Number.isFinite(currentEnemy.pop) ? currentEnemy.pop : 0;
     
     stats.money += rewardMoney;
     stats.popularity += rewardPop;
@@ -1604,7 +1671,7 @@ function addToInventory(itemName, price, damage = 0, magicdamage = 0) {
   if (inventory.length >= 3) {
     const sold = inventory.shift();
     // 버려지는 아이템이 장착 중이었다면 해제
-    if (stats.equippedWeapon && stats.equippedWeapon.name === sold.name && stats.equippedWeapon.__slotRef === sold) {
+    if (stats.equippedWeapon === sold) {
       stats.equippedWeapon = null;
     }
     stats.money += sold.price;
