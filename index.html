@@ -52,6 +52,23 @@
 
   #log { margin-top:15px; background:#111; padding:10px; border-radius:8px; min-height:60px; }
 
+  #aiPanel, #gameOverBox {
+    width: 480px; max-width: 92vw; margin: 15px auto; padding: 15px;
+    background: #292929; border: 1px solid #666; border-radius: 10px; text-align: left;
+  }
+  #aiPanel h2 { margin: 0 0 10px; font-size: 18px; color: #ffcc00; }
+  #aiPanel p { font-size: 13px; line-height: 1.6; }
+  #aiInput {
+    display: block; width: 100%; min-height: 80px; padding: 10px;
+    border: 1px solid #888; border-radius: 6px; background: #111; color: #fff;
+    font: inherit; resize: vertical;
+  }
+  #aiProgress { width: 100%; }
+  #aiResult { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+  #aiResult:empty { display: none; }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  [hidden] { display: none !important; }
+
   #inventoryBox {
     position:absolute; right:20px; top:120px; background:#333; padding:15px;
     border-radius:10px; width:220px; max-width: 92vw; text-align:left;
@@ -188,6 +205,28 @@
   <button onclick="loadProgress()">불러오기</button>
   <button onclick="act('jail')">지용이의지하감옥</button>
 </div>
+
+<section id="aiPanel" aria-labelledby="aiHeading">
+  <h2 id="aiHeading">🤖 AI 자유 행동 · SmolLM 135M</h2>
+  <p>버튼 대신 지용이가 할 행동을 직접 입력해 보세요. 처음 실행할 때 모델을 내려받으며, 이후 계산은 이 브라우저에서 처리합니다.</p>
+  <form id="aiForm">
+    <label for="aiInput">어떤 행동을 할까요?</label>
+    <textarea id="aiInput" maxlength="300" required placeholder="예: 잠자기 / 씻기 / 산책하면서 노래하기" aria-describedby="aiHelp"></textarea>
+    <p id="aiHelp">한 번에 한 행동을 입력하세요. Ctrl+Enter로 실행할 수 있습니다. 자유 행동은 에너지 -5, 행복 +3으로 1턴 진행하며, 기존 행동은 원래 규칙을 따릅니다.</p>
+    <button id="aiSubmit" type="submit">행동하고 결과 보기</button>
+    <button id="aiCancel" type="button" hidden>AI 중지</button>
+  </form>
+  <p id="aiStatus" role="status">첫 실행 시 약 140MB의 모델과 별도 실행 파일을 다운로드합니다.</p>
+  <progress id="aiProgress" max="100" aria-label="모델 다운로드 진행률" hidden></progress>
+  <div id="aiResult" role="status" aria-live="polite" aria-atomic="true"></div>
+  <p>작은 모델이라 설명이 부정확하거나 영어로 나올 수 있습니다. 실제 결과와 능력치 변화를 기준으로 확인해 주세요.</p>
+</section>
+
+<section id="gameOverBox" role="alert" hidden>
+  <p id="gameOverReason"></p>
+  <p>행동 결과를 확인한 뒤 새 인생을 시작할 수 있습니다.</p>
+  <button id="restartGame" onclick="location.reload()">새 인생 시작</button>
+</section>
 
 <div id="socialActions" style="display:none; margin-top:10px;">
   <button onclick="showTribute()">조공 바치기</button>
@@ -660,6 +699,7 @@ function updateFriendshipStatus() {
   }
 }
 
+let gameEnded = false;
 function checkDeath() {
   let reason = stats.deathReason || "";
   if (!reason) {
@@ -668,8 +708,15 @@ function checkDeath() {
     else if (stats.hunger <= 0) reason = "기아로 죽음";
   }
   if (reason) {
-    alert(`⚰ 강지용은 ${reason}. 새 인생을 시작합니다.`);
-    location.reload();
+    // Keep the final outcome visible, including an AI explanation still being generated.
+    gameEnded = true;
+    duelOver = true;
+    closeNewsPopup();
+    document.getElementById("gameOverReason").textContent = `⚰ 강지용은 ${reason}.`;
+    document.getElementById("gameOverBox").hidden = false;
+    document.querySelectorAll("button").forEach(button => {
+      if (button.id !== "restartGame" && button.id !== "aiCancel") button.disabled = true;
+    });
   }
 }
 
@@ -1848,6 +1895,7 @@ updateInventory();
 updateStats();
 
 </script>
+<script src="./ai.js" defer></script>
 
 </body>
 </html>
